@@ -15,6 +15,16 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -26,7 +36,7 @@ model User {
 
   // Relations
 
-  // orders        Order[]
+  orders        Order[]
   vendorProfile VendorProfile?
   riderProfile  RiderProfile?
 }
@@ -53,4 +63,28 @@ model RiderProfile {
   
   userId      Int     @unique
   user        User    @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  vendorId    Int?
+  riderId     Int?
+  status      OrderStatus @default(PLACED)
+  totalAmount Float
+  createdAt   DateTime    @default(now())
+
+  user   User @relation(fields: [userId], references: [id])
+  items OrderItem[]
+  @@index([userId])
+}
+
+model OrderItem {
+  id        Int @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+
+  order Order @relation(fields: [orderId], references: [id])
 }
