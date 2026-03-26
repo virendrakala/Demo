@@ -15,5 +15,6 @@ export declare const getVendorReviews: (req: AuthRequest, res: Response, next: N
 export declare const getVendorAnalytics: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const createCourierJob: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const updateCourierJob: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const getDeliveryIssues: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorDeliveryIssues: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const updateDeliveryIssueStatus: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 //# sourceMappingURL=vendorController.d.ts.map
