@@ -1,0 +1,19 @@
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../middlewares/authMiddleware';
+export declare const getVendors: (req: any, res: Response, next: NextFunction) => Promise<void>;
+export declare const getAllProducts: (req: any, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorById: (req: any, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorProfile: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const updateVendorProfile: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorProducts: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const addProduct: (req: any, res: Response, next: NextFunction) => Promise<void>;
+export declare const updateProduct: (req: any, res: Response, next: NextFunction) => Promise<void>;
+export declare const deleteProduct: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorOrders: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const acceptOrder: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorReviews: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getVendorAnalytics: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const createCourierJob: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const updateCourierJob: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+export declare const getDeliveryIssues: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+//# sourceMappingURL=vendorController.d.ts.map
