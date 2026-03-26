@@ -159,6 +159,8 @@ interface AppContextType {
   
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  authLoading: boolean;
+  logout: () => void;
   updateUserCoins: (userId: string, coins: number) => void;
   login: (email: string, password: string) => Promise<User | null>;
   register: (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => Promise<User | null>;
@@ -309,6 +311,7 @@ const MOCK_DELIVERY_ISSUES: DeliveryIssue[] = [
 export function AppProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [courierJobs, setCourierJobs] = useState<CourierJob[]>([]);
@@ -347,6 +350,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     
     fetchInitialData();
+  }, []);
+
+  // Re-hydrate auth state on refresh from the persisted JWT.
+  React.useEffect(() => {
+    const initAuth = async () => {
+      // Prevent permanent blank screens if /auth/me hangs.
+      const timeoutMs = 8000;
+      let settled = false;
+      const timeoutId = window.setTimeout(() => {
+        if (!settled) setAuthLoading(false);
+      }, timeoutMs);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setCurrentUser(null);
+        setAuthLoading(false);
+        settled = true;
+        window.clearTimeout(timeoutId);
+        return;
+      }
+
+      try {
+        const res = await api.get('/auth/me');
+        setCurrentUser(res.data.data);
+      } catch (e: any) {
+        // Token invalid/expired or backend unreachable; fall back to logged-out.
+        try { localStorage.removeItem('token'); } catch {}
+        setCurrentUser(null);
+      } finally {
+        settled = true;
+        window.clearTimeout(timeoutId);
+        setAuthLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
   React.useEffect(() => {
@@ -391,13 +430,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         formData.append('image', product.image);
       }
 
-      const response = await api.post('/vendors/me/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Don't set Content-Type manually; axios/browser will add the boundary.
+      const response = await api.post('/vendors/me/products', formData);
       const newProduct = { ...response.data.data, vendorName: currentUser?.name || 'My Shop' };
       setProducts(prev => [...prev, newProduct]);
     } catch (error) {
-      console.error("Failed to add product:", error);
+      const err: any = error;
+      console.error("Failed to add product:", {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data
+      });
     }
   };
 
@@ -415,7 +458,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateProduct = async (productId: string, updates: any) => {
     try {
       let payload: any = updates;
-      const headers: any = {};
       
       if (updates.image instanceof File) {
         payload = new FormData();
@@ -424,14 +466,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
             payload.append(key, value instanceof File ? value : String(value));
           }
         });
-        headers['Content-Type'] = 'multipart/form-data';
       }
 
-      const response = await api.patch(`/vendors/me/products/${productId}`, payload, { headers });
+      // Don't set Content-Type manually; axios/browser will add the boundary for FormData.
+      const response = await api.patch(`/vendors/me/products/${productId}`, payload);
       const updatedProduct = response.data.data;
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updatedProduct } : p));
     } catch (error) {
-      console.error("Failed to update product:", error);
+      const err: any = error;
+      console.error("Failed to update product:", {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data
+      });
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updates } : p));
     }
   };
@@ -648,6 +695,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const logout = () => {
+    try { localStorage.removeItem('token'); } catch {}
+    setCurrentUser(null);
+  };
+
   const addComplaint = async (complaint: Complaint) => {
     try {
       if (complaint.orderId) await api.post(`/orders/${complaint.orderId}/complaint`, complaint);
@@ -739,6 +791,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateProduct,
         currentUser,
         setCurrentUser,
+        authLoading,
+        logout,
         updateUserCoins,
         login,
         register,

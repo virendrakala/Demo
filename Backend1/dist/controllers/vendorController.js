@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDeliveryIssues = exports.updateCourierJob = exports.createCourierJob = exports.getVendorAnalytics = exports.getVendorReviews = exports.acceptOrder = exports.getVendorOrders = exports.deleteProduct = exports.updateProduct = exports.addProduct = exports.getVendorProducts = exports.updateVendorProfile = exports.getVendorProfile = exports.getVendorById = exports.getAllProducts = exports.getVendors = void 0;
+exports.updateDeliveryIssueStatus = exports.getVendorDeliveryIssues = exports.updateCourierJob = exports.createCourierJob = exports.getVendorAnalytics = exports.getVendorReviews = exports.acceptOrder = exports.getVendorOrders = exports.deleteProduct = exports.updateProduct = exports.addProduct = exports.getVendorProducts = exports.updateVendorProfile = exports.getVendorProfile = exports.getVendorById = exports.getAllProducts = exports.getVendors = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const AppError_1 = require("../utils/AppError");
 const getVendors = async (req, res, next) => {
@@ -247,7 +247,7 @@ const updateCourierJob = async (req, res, next) => {
     }
 };
 exports.updateCourierJob = updateCourierJob;
-const getDeliveryIssues = async (req, res, next) => {
+const getVendorDeliveryIssues = async (req, res, next) => {
     try {
         const vendor = await db_1.default.vendor.findUnique({ where: { userId: req.user.id } });
         if (!vendor)
@@ -258,6 +258,7 @@ const getDeliveryIssues = async (req, res, next) => {
                 order: {
                     select: {
                         id: true,
+                        deliveryAddress: true,
                         status: true,
                         courier: { select: { name: true, phone: true } }
                     }
@@ -271,5 +272,32 @@ const getDeliveryIssues = async (req, res, next) => {
         next(error);
     }
 };
-exports.getDeliveryIssues = getDeliveryIssues;
+exports.getVendorDeliveryIssues = getVendorDeliveryIssues;
+const updateDeliveryIssueStatus = async (req, res, next) => {
+    try {
+        const { status, resolutionNotes } = req.body;
+        const { issueId } = req.params;
+        const vendor = await db_1.default.vendor.findUnique({ where: { userId: req.user.id } });
+        if (!vendor)
+            return next(new AppError_1.AppError('Vendor not found', 404));
+        const existingIssue = await db_1.default.deliveryIssue.findFirst({
+            where: {
+                id: issueId,
+                order: { vendorId: vendor.id }
+            }
+        });
+        if (!existingIssue) {
+            return next(new AppError_1.AppError('Delivery issue not found or unauthorized', 404));
+        }
+        const updatedIssue = await db_1.default.deliveryIssue.update({
+            where: { id: issueId },
+            data: { status, resolutionNotes }
+        });
+        res.status(200).json({ success: true, data: updatedIssue, message: 'Delivery issue status updated successfully' });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateDeliveryIssueStatus = updateDeliveryIssueStatus;
 //# sourceMappingURL=vendorController.js.map
