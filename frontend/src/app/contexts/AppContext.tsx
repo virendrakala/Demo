@@ -153,6 +153,7 @@ export interface TransactionHistory {
 
 interface AppContextType {
   products: Product[];
+  refreshProducts: () => Promise<void>;
   addProduct: (product: Product) => void;
   removeProduct: (productId: string) => void;
   updateProduct: (productId: string, updates: Partial<Product>) => void;
@@ -388,6 +389,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, []);
 
+  const refreshProducts = async () => {
+    try {
+      const cacheBust = `?t=${Date.now()}`;
+      const res = await api.get('/vendors/products' + cacheBust);
+      let allProducts = res.data.data.map((p: any) => ({
+        ...p,
+        vendorName: p.vendor?.name || "Unknown Vendor"
+      }));
+      
+      if (currentUser && (currentUser.role === 'VENDOR' || currentUser.role === 'vendor')) {
+        try {
+          const myProductsRes = await api.get('/vendors/me/products' + cacheBust);
+          const myProducts = myProductsRes.data.data.map((p: any) => ({
+            ...p,
+            vendorName: currentUser.name || "My Shop"
+          }));
+          const myProductIds = new Set(myProducts.map((p: any) => p.id));
+          allProducts = allProducts.filter((p: any) => !myProductIds.has(p.id)).concat(myProducts);
+        } catch(e) {}
+      }
+      setProducts(allProducts);
+    } catch(e) {}
+  };
+
   React.useEffect(() => {
     let intervalId: any;
 
@@ -409,10 +434,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         api.get('/users/complaints').then(res => setComplaints(res.data.data));
       }
       fetchOrders();
-      intervalId = setInterval(fetchOrders, 3000); // Poll every 3 seconds for instant updates
+      refreshProducts();
+      intervalId = setInterval(() => {
+        fetchOrders();
+        refreshProducts();
+      }, 3000); // Poll every 3 seconds for instant updates
     } else {
       setOrders([]);
       setComplaints([]);
+      refreshProducts();
+      intervalId = setInterval(() => {
+        refreshProducts();
+      }, 3000);
     }
 
     return () => clearInterval(intervalId);
@@ -786,6 +819,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         products,
+        refreshProducts,
         addProduct,
         removeProduct,
         updateProduct,
