@@ -144,14 +144,10 @@ export function VendorInterface() {
     }
   };
 
-<<<<<<< HEAD
-  const handleAddProduct = async () => {
-=======
   if (authLoading) return null;
   if (!currentUser || (currentUser.role !== 'VENDOR' && currentUser.role !== 'vendor')) return null;
 
-  const handleAddProduct = () => {
->>>>>>> main
+  const handleAddProduct = async () => {
     if (!productForm.name.trim() || !productForm.price) { toast.error('Name and price are required'); return; }
     try {
       await addProduct({ id: `P${Date.now()}`, vendorId, vendorName: vendor?.name || 'My Shop', name: productForm.name, category: productForm.category, price: productForm.price, description: productForm.description, image: productForm.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400', inStock: productForm.stock > 0 });
