@@ -39,9 +39,11 @@ const authMiddleware_1 = require("../middlewares/authMiddleware");
 const uploadMiddleware_1 = require("../middlewares/uploadMiddleware");
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.verifyToken);
-router.use((0, authMiddleware_1.requireRole)('user'));
+// Accessible by any authenticated role
 router.get('/profile', userController.getProfile);
 router.patch('/profile', uploadMiddleware_1.upload.single('photo'), userController.updateProfile);
+// Strictly accessible by customers
+router.use((0, authMiddleware_1.requireRole)('user'));
 router.get('/favorites', userController.getFavorites);
 router.post('/favorites/:productId', userController.toggleFavorite);
 router.get('/wallet', userController.getWallet);

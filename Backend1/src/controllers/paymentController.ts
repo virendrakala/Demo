@@ -6,21 +6,77 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 
 export const createRazorpayOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { amount, currency, orderId } = req.body;
+    const { amount, currency, orderId, items, vendorId, deliveryAddress, paymentMethod } = req.body;
     
-    // Check if order belongs to user
-    const dbOrder = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!dbOrder || dbOrder.userId !== req.user.id) {
-      return next(new AppError('Invalid order', 400));
+    // If orderId is provided, validate it. Otherwise create a new order
+    let dbOrder = null;
+    if (orderId) {
+      dbOrder = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!dbOrder || dbOrder.userId !== req.user.id) {
+        return next(new AppError('Invalid order', 400));
+      }
+    } else if (items && vendorId && deliveryAddress) {
+      // Create order if items are provided
+      const productIds = items.map((i: any) => i.productId);
+      const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+      
+      if (!products.length) {
+        return next(new AppError('Products not found', 404));
+      }
+
+      let total = 0;
+      const orderItemsData = items.map((item: any) => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) throw new AppError(`Product not found: ${item.productId}`, 404);
+        total += product.price * item.quantity;
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          price: product.price
+        };
+      });
+
+      const kartCoinsEarned = Math.floor(total * 0.1);
+
+      dbOrder = await prisma.order.create({
+        data: {
+          userId: req.user.id,
+          vendorId,
+          total,
+          deliveryAddress,
+          paymentMethod: paymentMethod || 'UPI',
+          kartCoinsEarned,
+          items: {
+            create: orderItemsData
+          }
+        }
+      });
+
+      // Create payment record
+      await prisma.payment.create({
+        data: {
+          orderId: dbOrder.id,
+          userId: req.user.id,
+          amount: total + 30,
+          paymentStatus: 'pending',
+          method: paymentMethod || 'UPI'
+        }
+      });
+    } else {
+      return next(new AppError('Invalid request: orderId or items required', 400));
     }
 
-    const order = await paymentService.createRazorpayOrder(amount, currency);
+    // Security check: Use the actual computed amount (item total + flat 30 delivery)
+    const finalAmount = dbOrder ? dbOrder.total + 30 : amount;
+
+    const razorpayOrder = await paymentService.createRazorpayOrder(finalAmount, currency);
     
     res.status(200).json({
       success: true,
       data: {
-        razorpayOrderId: order.id,
-        amount,
+        orderId: dbOrder.id,
+        razorpayOrderId: razorpayOrder.id,
+        amount: finalAmount,
         currency,
         key: process.env.RAZORPAY_KEY_ID
       }

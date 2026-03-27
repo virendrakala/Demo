@@ -85,37 +85,65 @@ async function main() {
   }
 
   // 4. Create Products
-  const categories = ['Food', 'Beverage', 'Printing', 'Laundry', 'Stationery'];
   const amul = vendorRecords.find(v => v.email === 'amul@iitk.ac.in')!;
   const photocopy = vendorRecords.find(v => v.email === 'photocopy@iitk.ac.in')!;
+  const laundry = vendorRecords.find(v => v.email === 'laundry@iitk.ac.in')!;
+  const bazaar = vendorRecords.find(v => v.email === 'bazaar@iitk.ac.in')!;
+  const nescafe = vendorRecords.find(v => v.email === 'nescafe@iitk.ac.in')!;
+  const kc = vendorRecords.find(v => v.email === 'kc@iitk.ac.in')!;
   
   const productsData = [
-    { vendorId: amul.id, name: 'Amul Kool', category: 'Beverage', price: 25, description: 'Chilled flavoured milk', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: amul.id, name: 'Cheese Sandwich', category: 'Food', price: 40, description: 'Grilled cheese sandwich', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: amul.id, name: 'Butter Toast', category: 'Food', price: 20, description: 'Crispy buttered toast', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'A4 Print B/W', category: 'Printing', price: 2, description: 'Single side black and white print', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'A4 Print Color', category: 'Printing', price: 10, description: 'Color print', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'Spiral Binding', category: 'Stationery', price: 30, description: 'Up to 100 pages', image: 'https://via.placeholder.com/150', inStock: true },
-    // Fill the rest up to 22 products
+    // Amul Parlour - Dairy & Snacks
+    { vendorId: amul.id, name: 'Amul Kool - Chocolate', category: 'Beverage', price: 25, description: 'Chilled chocolate flavoured milk - 200ml', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.8 },
+    { vendorId: amul.id, name: 'Amul Kool - Strawberry', category: 'Beverage', price: 25, description: 'Refreshing strawberry flavoured milk - 200ml', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.7 },
+    { vendorId: amul.id, name: 'Cheese Sandwich', category: 'Food', price: 40, description: 'Fresh grilled cheese sandwich with butter & mayo', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.6 },
+    { vendorId: amul.id, name: 'Butter Toast', category: 'Food', price: 20, description: 'Crispy toasted bread with butter', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.5 },
+    { vendorId: amul.id, name: 'Amul Ice Cream - Vanilla', category: 'Food', price: 50, description: 'Creamy vanilla ice cream - 100ml', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.9 },
+    { vendorId: amul.id, name: 'Paneer Paratha', category: 'Food', price: 60, description: 'Stuffed paneer paratha with curd & pickle', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.8 },
+    
+    // Photocopy Shop - Printing & Stationery
+    { vendorId: photocopy.id, name: 'A4 Print - B&W (Single sided)', category: 'Printing', price: 2, description: 'Black & white print on single side', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.7 },
+    { vendorId: photocopy.id, name: 'A4 Print - Color (Single sided)', category: 'Printing', price: 10, description: 'Full color print on single side', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.8 },
+    { vendorId: photocopy.id, name: 'Spiral Binding (50 pages)', category: 'Stationery', price: 30, description: 'Professional spiral binding up to 50 pages', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.6 },
+    { vendorId: photocopy.id, name: 'Lamination - A4', category: 'Printing', price: 20, description: 'Glossy lamination for A4 size', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.5 },
+    { vendorId: photocopy.id, name: 'Notebook - 100 pages', category: 'Stationery', price: 35, description: 'Ruled notebook 100 pages premium quality', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.4 },
+    { vendorId: photocopy.id, name: 'Pen - Ballpoint (pack of 10)', category: 'Stationery', price: 50, description: 'Smooth writing ballpoint pens - pack of 10', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.3 },
+    
+    // Wash & Iron - Laundry Services
+    { vendorId: laundry.id, name: 'Shirt Wash & Iron', category: 'Laundry', price: 30, description: 'Professional wash and iron service per shirt', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.7 },
+    { vendorId: laundry.id, name: 'Trouser Dry Clean', category: 'Laundry', price: 50, description: 'Dry cleaning service for trousers', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.8 },
+    { vendorId: laundry.id, name: 'Bedsheet Washing (per set)', category: 'Laundry', price: 60, description: 'Complete washing and ironing of bedsheet set', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.6 },
+    { vendorId: laundry.id, name: 'Blanket Wash', category: 'Laundry', price: 100, description: 'Heavy duty washing for blankets', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.5 },
+    
+    // Chhota Bazaar - General Items
+    { vendorId: bazaar.id, name: 'Chocolate - Dairy Milk', category: 'Food', price: 20, description: 'Dairy Milk chocolate bar', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.8 },
+    { vendorId: bazaar.id, name: 'Chips - Lay\'s (Classic)', category: 'Food', price: 15, description: 'Lay\'s classic salted potato chips - 30g', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.6 },
+    { vendorId: bazaar.id, name: 'Biscuits - Hide & Seek', category: 'Food', price: 10, description: 'Hide & Seek chocolate chip cookies', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.5 },
+    { vendorId: bazaar.id, name: 'Magic - Instant Noodles', category: 'Food', price: 12, description: 'Magic instant noodles - 75g', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.7 },
+    
+    // Nescafe - Beverages
+    { vendorId: nescafe.id, name: 'Coffee - Americano', category: 'Beverage', price: 30, description: 'Hot Americano coffee', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.9 },
+    { vendorId: nescafe.id, name: 'Coffee - Cappuccino', category: 'Beverage', price: 45, description: 'Creamy cappuccino with foam', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.8 },
+    { vendorId: nescafe.id, name: 'Tea - Masala Chai', category: 'Beverage', price: 20, description: 'Traditional Indian masala tea', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.7 },
+    { vendorId: nescafe.id, name: 'Coffee - Mocha', category: 'Beverage', price: 50, description: 'Rich chocolate mocha coffee', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.6 },
+    
+    // KC Shop - Electronics/Accessories  
+    { vendorId: kc.id, name: 'Phone Charger - USB-C', category: 'Electronics', price: 200, description: 'Fast charging USB-C charger 18W', image: 'https://via.placeholder.com/150', inStock: true, isBestseller: true, rating: 4.8 },
+    { vendorId: kc.id, name: 'Earphones - Wired', category: 'Electronics', price: 150, description: 'Quality wired earphones with microphone', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.6 },
+    { vendorId: kc.id, name: 'Phone Case - Protective', category: 'Accessories', price: 250, description: 'Durable protective phone case', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.7 },
+    { vendorId: kc.id, name: 'Screen Protector - Glass', category: 'Accessories', price: 100, description: 'Tempered glass screen protector', image: 'https://via.placeholder.com/150', inStock: true, rating: 4.5 },
   ];
-
-  // Adding more mock products
-  for (let i = 6; i < 22; i++) {
-    const v = vendorRecords[i % vendorRecords.length];
-    productsData.push({
-      vendorId: v.id,
-      name: `Mock Product ${i+1}`,
-      category: categories[i % categories.length],
-      price: Math.floor(Math.random() * 200) + 10,
-      description: 'Mock description for product',
-      image: 'https://via.placeholder.com/150',
-      inStock: true
-    });
-  }
 
   const products = [];
   for (const p of productsData) {
-    const product = await prisma.product.create({ data: p });
+    const product = await prisma.product.create({ 
+      data: {
+        ...p,
+        rating: p.rating || undefined,
+        isBestseller: p.isBestseller || false,
+        totalReviews: Math.floor(Math.random() * 50) + 10
+      }
+    });
     products.push(product);
   }
 

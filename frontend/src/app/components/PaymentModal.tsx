@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/app/components/ui/dialog';
 import { Smartphone, Banknote, CheckCircle2, Loader2, Download, MapPin, Receipt } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
+import api from '@/api/axios';
 import { toast } from 'sonner';
 
 interface PaymentModalProps {
@@ -11,12 +12,30 @@ interface PaymentModalProps {
   onPaymentSuccess: (paymentMethod: string, totalAmount: number) => void;
 }
 
+// Declare Razorpay global type
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: PaymentModalProps) {
   const { currentUser } = useApp();
   const [selectedMethod, setSelectedMethod] = useState<'upi' | 'cod'>('upi');
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'success'>('select');
   const [receipt, setReceipt] = useState('');
   const [dots, setDots] = useState('');
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     if (open) { setPaymentStep('select'); setSelectedMethod('upi'); setReceipt(''); }
@@ -33,21 +52,107 @@ export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: Pa
   const itemTotal = order.total;
   const deliveryCharges = 30;
   const totalAmount = itemTotal + deliveryCharges;
+  const amountInPaise = Math.round(totalAmount * 100); // Razorpay expects amount in paise
 
   const paymentMethods = [
     { id: 'upi' as const, name: 'UPI Payment', icon: Smartphone, description: 'Google Pay, PhonePe, Paytm, etc.', badge: 'Recommended' },
     { id: 'cod' as const, name: 'Cash on Delivery', icon: Banknote, description: 'Pay when you receive your order', badge: null },
   ];
 
-  const initiatePayment = () => {
+  const handleRazorpayPayment = async () => {
+    try {
+      setPaymentStep('processing');
+
+      // Step 1: Create Razorpay order from backend (backend will create DB order if needed)
+      const createOrderResponse = await api.post('/payments/create-razorpay-order', {
+        amount: totalAmount,
+        currency: 'INR',
+        // Omit frontend-generated orderId so backend creates a new one
+        ...(order.id && !order.id.startsWith('ORD') ? { orderId: order.id } : {}),
+        items: order.items || order.products || [],
+        vendorId: order.vendorId,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: 'UPI'
+      });
+
+      if (!createOrderResponse.data.success) {
+        throw new Error('Failed to create payment order');
+      }
+
+      const { razorpayOrderId, key, orderId: createdOrderId } = createOrderResponse.data.data;
+
+      // Step 2: Initialize Razorpay checkout
+      const options = {
+        key: key,
+        amount: amountInPaise,
+        currency: 'INR',
+        name: 'IITKart',
+        description: `Order ${createdOrderId}`,
+        order_id: razorpayOrderId,
+        handler: async (response: any) => {
+          try {
+            // Step 3: Verify payment from backend
+            const verifyResponse = await api.post('/payments/verify', {
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpaySignature: response.razorpay_signature,
+              orderId: createdOrderId,
+              method: 'upi'
+            });
+
+            if (verifyResponse.data.success) {
+              const paymentID = response.razorpay_payment_id;
+              const receiptText = `\n╔════════════════════════════════╗\n║       PAYMENT RECEIPT         ║\n║          IITKart              ║\n╠════════════════════════════════╣\n║ Order: ${createdOrderId}\n║ Payment: ${paymentID}\n║ Date: ${new Date().toLocaleString('en-IN')}\n║\n║ Item Total:     ₹${itemTotal.toFixed(2)}\n║ Delivery:       ₹${deliveryCharges.toFixed(2)}\n║ ────────────────────────────\n║ TOTAL:          ₹${totalAmount.toFixed(2)}\n║\n║ Method: UPI Payment\n║ Status: SUCCESS ✓\n║\n║ Address: ${order.deliveryAddress}\n╚════════════════════════════════╝\n\nThank you for ordering with IITKart!`;
+              setReceipt(receiptText);
+              setPaymentStep('success');
+              toast.success('Payment successful! 🎉');
+            }
+          } catch (error) {
+            toast.error('Payment verification failed');
+            setPaymentStep('select');
+          }
+        },
+        prefill: {
+          name: currentUser?.name || '',
+          email: currentUser?.email || '',
+          contact: currentUser?.phone || ''
+        },
+        modal: {
+          ondismiss: () => {
+            toast.error('Payment cancelled');
+            setPaymentStep('select');
+          }
+        },
+        theme: {
+          color: '#1E3A8A'
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      toast.error('Failed to initiate payment');
+      setPaymentStep('select');
+    }
+  };
+
+  const handleCODPayment = () => {
     setPaymentStep('processing');
     setTimeout(() => {
       const paymentID = `PAY${Date.now()}`;
-      const receiptText = `\n╔════════════════════════════════╗\n║       PAYMENT RECEIPT         ║\n║          IITKart              ║\n╠════════════════════════════════╣\n║ Order: ${order.id}\n║ Payment: ${paymentID}\n║ Date: ${new Date().toLocaleString('en-IN')}\n║\n║ Item Total:     ₹${itemTotal.toFixed(2)}\n║ Delivery:       ₹${deliveryCharges.toFixed(2)}\n║ ────────────────────────────\n║ TOTAL:          ₹${totalAmount.toFixed(2)}\n║\n║ Method: ${selectedMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}\n║ Status: ${selectedMethod === 'cod' ? 'PENDING (COD)' : 'SUCCESS ✓'}\n║\n║ Address: ${order.deliveryAddress}\n╚════════════════════════════════╝\n\nThank you for ordering with IITKart!`;
+      const receiptText = `\n╔════════════════════════════════╗\n║       PAYMENT RECEIPT         ║\n║          IITKart              ║\n╠════════════════════════════════╣\n║ Order: ${order.id}\n║ Payment: ${paymentID}\n║ Date: ${new Date().toLocaleString('en-IN')}\n║\n║ Item Total:     ₹${itemTotal.toFixed(2)}\n║ Delivery:       ₹${deliveryCharges.toFixed(2)}\n║ ────────────────────────────\n║ TOTAL:          ₹${totalAmount.toFixed(2)}\n║\n║ Method: Cash on Delivery\n║ Status: PENDING (COD)\n║\n║ Address: ${order.deliveryAddress}\n╚════════════════════════════════╝\n\nThank you for ordering with IITKart!`;
       setReceipt(receiptText);
       setPaymentStep('success');
-      toast.success(selectedMethod === 'cod' ? 'Order placed! Pay on delivery.' : 'Payment successful! 🎉');
+      toast.success('Order placed! Pay on delivery.');
     }, 1800);
+  };
+
+  const initiatePayment = () => {
+    if (selectedMethod === 'upi') {
+      handleRazorpayPayment();
+    } else {
+      handleCODPayment();
+    }
   };
 
   const downloadReceipt = () => {
